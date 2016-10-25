@@ -3,47 +3,84 @@ using UnityEngine.UI;
 
 public class TankShooting : MonoBehaviour
 {
-    public int m_PlayerNumber = 1;       
-    public Rigidbody m_Shell;            
-    public Transform m_FireTransform;    
-    public Slider m_AimSlider;           
-    public AudioSource m_ShootingAudio;  
-    public AudioClip m_ChargingClip;     
-    public AudioClip m_FireClip;         
-    public float m_MinLaunchForce = 15f; 
-    public float m_MaxLaunchForce = 30f; 
-    public float m_MaxChargeTime = 0.75f;
-
-    /*
-    private string m_FireButton;         
-    private float m_CurrentLaunchForce;  
-    private float m_ChargeSpeed;         
-    private bool m_Fired;                
+    public int playerNumber = 1;       
+    public Rigidbody shell;            
+    public Transform fireTransform;    
+    public Slider aimSlider;           
+    public AudioSource shootingAudio;  
+    public AudioClip chargingClip;     
+    public AudioClip fireClip;         
+    public float minLaunchForce = 15f; 
+    public float maxLaunchForce = 30f; 
+    public float maxChargeTime = 0.75f;
+    
+    private string fireButton;         
+    private float currentLaunchForce;  
+    private float chargeSpeed;         
+    private bool fired;                
 
 
     private void OnEnable()
     {
-        m_CurrentLaunchForce = m_MinLaunchForce;
-        m_AimSlider.value = m_MinLaunchForce;
+        currentLaunchForce = minLaunchForce;
+        aimSlider.value = minLaunchForce;
     }
 
 
     private void Start()
     {
-        m_FireButton = "Fire" + m_PlayerNumber;
+        fireButton = "Fire" + playerNumber;
 
-        m_ChargeSpeed = (m_MaxLaunchForce - m_MinLaunchForce) / m_MaxChargeTime;
+        chargeSpeed = (maxLaunchForce - minLaunchForce) / maxChargeTime;
     }
-    */
 
     private void Update()
     {
         // Track the current state of the fire button and make decisions based on the current launch force.
+        aimSlider.value = minLaunchForce;
+
+        if (currentLaunchForce >= maxLaunchForce && !fired)
+        {
+            // at max charge, not yet fired
+            currentLaunchForce = maxLaunchForce;
+            Fire();
+        }
+        else if (Input.GetButtonDown(fireButton))
+        {
+            // have we pressed fire for the first time?
+            fired = false;
+            currentLaunchForce = minLaunchForce;
+
+            shootingAudio.clip = chargingClip;
+            shootingAudio.Play();
+        }
+        else if (Input.GetButton(fireButton) && !fired)
+        {
+            // Hilding the fire button, not yet fired
+            currentLaunchForce += chargeSpeed * Time.deltaTime;
+
+            aimSlider.value = currentLaunchForce;
+        }
+        else if (Input.GetButtonUp(fireButton) && !fired)
+        {
+            // we released the button, having not fired yet
+            Fire();
+        }
     }
 
 
     private void Fire()
     {
         // Instantiate and launch the shell.
+        fired = true;
+
+        Rigidbody shellInstance = Instantiate(shell, fireTransform.position, fireTransform.rotation) as Rigidbody;
+
+        shellInstance.velocity = currentLaunchForce * fireTransform.forward;
+
+        shootingAudio.clip = fireClip;
+        shootingAudio.Play();
+
+        currentLaunchForce = minLaunchForce;
     }
 }
